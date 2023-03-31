@@ -1,26 +1,30 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
-import {Container, Title, Input, Button, ButtonText} from './styles'
+import Feather from 'react-native-vector-icons/Feather'
+
+import { Container, ButtonPost } from './styles'
+
+
 
 function Home(){
+  const navigation = useNavigation();
+
   return(
     <Container>
-      <Title>
-        Dev<Text style={{color:'#E52246'}}>Post</Text>
-      </Title>
+      <Text>TELA HOME</Text>
 
-      <Input 
-        placeholder="Seuemail@teste.com"
-      />
-      <Input 
-        placeholder="***************"
-      />
-
-      <Button>
-        <ButtonText>Acessar</ButtonText>
-      </Button>
-
+      <ButtonPost 
+        activeOpacity={0.8}
+        onPress={ () => navigation.navigate('NewPost')}
+      >
+        <Feather
+          name='edit-2'
+          color="#FFF"
+          size={25}
+        />
+      </ButtonPost>
     </Container>
   )
 }
