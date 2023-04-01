@@ -14,9 +14,13 @@ export const ButtonPost = styled.TouchableOpacity`
     border-radius: 30px;
     justify-content: center;
     align-items: center;
-    z-index: 99
+    z-index: 99;
 `;
-export const Input = styled.TextInput``;
+export const ListPosts = styled.FlatList`
+    flex: 1;
+    background-color: #F1F1F1;
+    
+`;
 export const Button = styled.TouchableOpacity``;
 export const ButtonText = styled.Text``;
 

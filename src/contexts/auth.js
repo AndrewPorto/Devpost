@@ -1,109 +1,115 @@
-import React, { useState, createContext, useEffect } from "react";
+import React, { useState, createContext, useEffect } from 'react';
 
-import auth from '@react-native-firebase/auth'
-import firestore from '@react-native-firebase/firestore'
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const AuthContext = createContext( {} )
+export const AuthContext = createContext({});
 
-function AuthProvider( {children} ){
-    const [user, setUser] = useState(null)
-    const [loadingAuth, setLoadingAuth] = useState(false);
-    const [loading, setLoading] = useState(true)
+function AuthProvider({ children }){
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(()=> {
-        async function loadStorage(){
-          const storageUser = await AsyncStorage.getItem('@devapp');
+  const [loadingAuth, setLoadingAuth] = useState(false);
 
-          if(storageUser){
-            setUser(JSON.parse(storageUser))
-            setLoading(false);
-          }
+  useEffect(()=> {
+    async function loadStoarge(){
+      const storageUser = await AsyncStorage.getItem('@devapp');
 
-            setLoading(false);
+      if(storageUser){
+        setUser(JSON.parse(storageUser))
+        setLoading(false);
+      }
+
+
+      setLoading(false);
+
+    }
+
+    loadStoarge();
+  }, [])
+
+
+
+  async function signUp(email, password, name){
+    setLoadingAuth(true);
+
+    await auth().createUserWithEmailAndPassword(email, password)
+    .then(async (value) => {
+      let uid = value.user.uid;
+      await firestore().collection('users')
+      .doc(uid).set({
+        nome: name,
+        createdAt: new Date(),
+      })
+      .then(() => {
+        let data = {
+          uid: uid,
+          nome: name,
+          email: value.user.email
         }
-        loadStorage();
-    },[] )
+
+        setUser(data);
+        storageUser(data);
+        setLoadingAuth(false);
+
+      })
+
+    })
+    .catch((error) => {
+      console.log(error);
+      setLoadingAuth(false);
+    })
+  }
 
 
-    async function signUp(email, password, name){
+  async function signIn(email, password){
+    setLoadingAuth(true);
 
-        setLoadingAuth(true)
+    await auth().signInWithEmailAndPassword(email, password)
+    .then( async (value) => {
+      let uid = value.user.uid;
 
-        await auth().createUserWithEmailAndPassword(email, password)
-        .then(async (value) =>{
-            let uid = value.user.uid;
-            await firestore().collection('users')
-            .doc(uid).set({
-                nome: name,
-                createdAt: new Date()
-            })
-            .then(() => {
-                let data = {
-                    udi: uid,
-                    nome: name,
-                    email: value.user.email
-                }
+      const userProfile = await firestore().collection('users')
+      .doc(uid).get();
 
-                setUser(data);
-                storageUser(data);
-                setLoadingAuth(false);
-            })
+      //console.log(userProfile.data().nome)
+      let data = {
+        uid: uid,
+        nome: userProfile.data().nome,
+        email: value.user.email
+      };
+      
+      setUser(data);
+      storageUser(data);
+      setLoadingAuth(false);
 
-        })
-        .catch((error) => {
-            console.log(error);
-            setLoadingAuth(false)
-        })
-    }
+    })
+    .catch((error)=>{
+      console.log(error);
+      setLoadingAuth(false);
+    })
+  }
 
-    async function signIn(email, password){
-        setLoadingAuth(true)
 
-        await auth().signInWithEmailAndPassword(email, password)
-        .then( async (value) => {
-            let uid = value.user.uid
+  async function signOut(){
+    await auth().signOut();
+    await AsyncStorage.clear()
+    .then( () => {
+      setUser(null);
+    })
+  }
 
-            const userProfile = await firestore().collection('users')
-            .doc(uid).get()
+  async function storageUser(data){
+    await AsyncStorage.setItem('@devapp', JSON.stringify(data))
+  }
 
-            let data = {
-                uid: uid,
-                nome: userProfile.data().nome,
-                email: value.user.email
-            };
-
-            setUser(data);
-            storageUser(data);
-            setLoadingAuth(false);
-
-           // console.log(userProfile.data().nome)
-        })
-        .catch( (error) => {
-            console.log(error)
-            setLoadingAuth(false)
-        })
-    }
-
-    async function signOut(){
-        await auth().signOut();
-        await AsyncStorage.clear()
-        .then(() => {
-            setUser(null);
-        })
-    }
-
-    async function storageUser(data){
-        await AsyncStorage.setItem('@devapp', JSON.stringify(data))
-    }
-
-    return(
-        // !! converte para boolean
-        <AuthContext.Provider value={{ signed: !!user, signUp, signIn, signOut ,loadingAuth, loading, user }}>  
-            {children}
-        </AuthContext.Provider>
-    )
+  return(
+    <AuthContext.Provider value={{ signed: !!user, signUp, signIn, signOut, loadingAuth, loading, user }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
-export default AuthProvider
+export default AuthProvider;
